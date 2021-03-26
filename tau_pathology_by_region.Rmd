@@ -119,7 +119,7 @@ lower = time.res$Estimate-qt(.975,df=nrow(data)-3-1)*time.res$SE
 upper = time.res$Estimate+qt(.975,df=nrow(data)-3-1)*time.res$SE
 
 #Compute overlap of 95% confidence intervals with the null interval (change in odds of 0.9 - 1.1), i.e. within 10% difference is roughly equivalent (a somewhat conservative interval).
-overlap =  unlist(sapply(1:nrow(time.res), function(x) {    dd = (dist(as.vector(interval_intersection(Intervals(matrix(c(as.numeric(lower[x]),as.numeric(upper[x])),ncol=2)),Intervals(matrix(c(log(.9),log(1.1)),ncol=2))))))
+overlap =  unlist(sapply(1:nrow(time.res), function(x) {    dd = (dist(as.vector(interval_intersection(Intervals(matrix(c(as.numeric(lower[x]),as.numeric(upper[x])),ncol=2)),Intervals(matrix(c(log(.95),log(1.05)),ncol=2))))))
  if(length(dd) == 0){
    dd=0
  }
@@ -127,7 +127,7 @@ return(dd)
 }))
 
 #Compute second gen p-value per https://www.tandfonline.com/doi/full/10.1080/00031305.2018.1537893
-time.res$'Second gen' = (overlap/ abs(lower-upper)) * ifelse(abs(lower-upper)/ (2*(log(1.1)-log(.9))) > 1,abs(lower-upper)/ (2*(log(1.1)-log(.9))),1)
+time.res$'Second gen' = (overlap/ abs(lower-upper)) * ifelse(abs(lower-upper)/ (2*(log(1.05)-log(.95))) > 1,abs(lower-upper)/ (2*(log(1.05)-log(.95))),1)
 
 
 time.res$OR = exp(time.res$Estimate)
@@ -139,7 +139,7 @@ time.res = time.res[,c(1:5,9,10,6:8)]
  
 ## Results By Timepoint {.tabset}
 
-For each of these results sections, the 'Estimate' can be used to determine which genotype had more tau pathology where a postive number indicates G20 had more pathology and a negative would suggest NTG has more pathology.
+For each of these results sections (under the 4 tabs below), the 'Estimate' can be used to determine which genotype had more tau pathology where a postive number indicates G20 had more pathology and a negative would suggest NTG has more pathology.
 
 ### Regions with FDR < 0.1 
 
@@ -153,7 +153,7 @@ knitr::kable(time.res[time.res$`FDR` < 0.1,],digits=3)
 
 ### Regions with 2nd generation p-value = 0
 
-With the second generation p-value we again see the genoptye difference in the cENTl and cCA1 regions, but we were also able to pick up iAOB at 9 months, iSUB at 1 and 3 months, iMRN at all timepoints, and cPRE at 1 and 9 months.  Note that each of these also has a signficant unadjusted p-value, again I think the FDR is being a touch too conservative. An interesting note on cPRE, at 1 month NTG has an estimated higher pathology, but at 9 months G20 has more; this is a good example of why including the interaction is important, as the differences here change in both sign and magnitude over time.
+With the second generation p-value we again see the genotype difference in the cENTl and cCA1 regions, but we were also able to pick up iAOB at 9 months, iSUB at 1 and 3 months, iMRN at all timepoints, and cPRE at 1 and 9 months.  Note that each of these also has a signficant unadjusted p-value, again I think the FDR is being a touch too conservative. An interesting note on cPRE, at 1 month NTG has an estimated higher pathology, but at 9 months G20 has more; this is a good example of why including the interaction is important, as the differences here change in both sign and magnitude over time.
 
 ```{r}
 
@@ -163,7 +163,7 @@ knitr::kable(time.res[time.res$`Second gen` == 0,],digits=3)
 
 
 ### Regions with unadjusted p < 0.05
-With the unadjusted p-values we again see the genoptye difference in the cENTl and cCA1 regions, iAOB at 9 months, iSUB at 1 and 3 months, iMRN at all timepoints, and cPRE at 1 and 9 months. With only 1 addition of iAOB at 6 months.
+With the unadjusted p-values we again see the genotype difference in the cENTl and cCA1 regions, iAOB at 9 months, iSUB at 1 and 3 months, iMRN at all timepoints, and cPRE at 1 and 9 months. With only 1 addition of iAOB at 6 months.
 
 ```{r}
 knitr::kable(time.res[time.res$`Unadjusted p` < 0.05,],digits=3)
@@ -175,6 +175,20 @@ A note on these results.  A second generation p-value of zero is signifcant, a s
 
 ```{r}
 
-knitr::kable(time.res,digits=3)
+time.all = time.res[time.res$Months=="All",]
+
+expand.months = rbindlist(lapply(1:nrow(time.all), function(x) {temp = rbind(time.all[x,],time.all[x,],time.all[x,],time.all[x,])
+temp$Months=c(1,3,6,9) 
+return(temp)}))
+time.res.e = time.res[time.res$Months !="All",]
+
+time.res.e=rbind(time.res.e,expand.months)
+
+knitr::kable(time.res.e,digits=3)
+library(ggplot2)
+
+ggplot(time.res.e,aes(x=OR,y=FDR)) + geom_point()+theme_classic()
+
+ggplot(time.res.e,aes(x=Estimate,y=FDR)) + geom_point()+theme_classic()
 
 ```

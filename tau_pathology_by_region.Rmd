@@ -187,8 +187,13 @@ time.res.e=rbind(time.res.e,expand.months)
 knitr::kable(time.res.e,digits=3)
 library(ggplot2)
 
-ggplot(time.res.e,aes(x=OR,y=FDR)) + geom_point()+theme_classic()
+ggplot(time.res.e,aes(x=OR,y=FDR)) + geom_point()+theme_classic()+facet_wrap(~Months)
 
-ggplot(time.res.e,aes(x=Estimate,y=FDR)) + geom_point()+theme_classic()
+time.res.e$Significant = case_when( time.res.e$FDR < 0.05 ~ "FDR and 2nd Gen",
+                                    time.res.e$`Second gen` == 0 ~"2nd Gen",
+                                    time.res.e$`Unadjusted p` < 0.05 ~ "Unadjusted Only",
+                                    TRUE~"ns")
+
+ggplot(time.res.e,aes(x=Estimate,y=abs(log(FDR)),color = Significant)) + geom_point()+theme_classic()+facet_wrap(~Months) + scale_color_manual(values=c("red","blue","black"))+ylab("-1*log(FDR p-value)")
 
 ```
